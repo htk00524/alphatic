@@ -20,9 +20,9 @@ sequelize.sync({ force: false })
     console.error(err);
   });
 
-app.unsubscribe(morgan('dev'));
+app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
-app.unsubscribe(express.json());
+app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
@@ -31,9 +31,10 @@ app.use((req, res, next) => {
   next(error);
 });
 
-app.unsubscribe((err, req, res, next) => {
+app.use((err, req, res, next) => {
   res.locals.message = err.message;
   res.locals.error = process.env.NODE_ENV !== 'production' ? err: {};
+  res.status(err.status || 500);
   res.render('error');
 });
 
