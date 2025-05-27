@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>틱택토</title>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #fffffe;
+      font-family: 'Special Elite', Courier, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+      color: #222;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 2em;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 120px);
+      grid-template-rows: repeat(3, 120px);
+      gap: 10px;
+
+      background-image: url('sketchbook.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: none;
+
+      padding: 15px;
+      border: 3px double #333;
+      border-radius: 12px;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.15);
+    }
+
+    canvas {
+      display: block;
+      width: 120px;
+      height: 120px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      text-align: center;
+      min-height: 30px;
+    }
+
+    #resetBtn {
+      margin-top: 15px;
+      background-color: #444;
+      color: #eee;
+      border: 1px solid #222;
+      padding: 10px 20px;
+      font-family: inherit;
+      font-size: 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    }
+
+    #resetBtn:hover {
+      background-color: #222;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>틱택토</h1>
+
+  <div id="board">
+    <canvas data-index="0"></canvas>
+    <canvas data-index="1"></canvas>
+    <canvas data-index="2"></canvas>
+    <canvas data-index="3"></canvas>
+    <canvas data-index="4"></canvas>
+    <canvas data-index="5"></canvas>
+    <canvas data-index="6"></canvas>
+    <canvas data-index="7"></canvas>
+    <canvas data-index="8"></canvas>
+  </div>
+
+  <div id="status">● 당신 차례</div>
+  <button id="resetBtn">다시 시작</button>
+
+  <script>
+    const boardElem = document.getElementById('board');
+    const statusElem = document.getElementById('status');
+    const resetBtn = document.getElementById('resetBtn');
+
+    let board = Array(9).fill(null);
+    let gameOver = false;
+
+    const PLAYER = 0;
+    const AI = 1;
+
+    const winCombos = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    const textureO = new Image();
+    const textureX = new Image();
+    textureO.src = 'pencil_o.png';
+    textureX.src = 'pencil_x.png';
+
+    let texturesLoaded = 0;
+    [textureO, textureX].forEach(tex => {
+      tex.onload = () => {
+        texturesLoaded++;
+        if (texturesLoaded === 2) render();
+      };
+    });
+
+    function checkWin(player) {
+      return winCombos.some(combo => combo.every(i => board[i] === player));
+    }
+
+    function checkDraw() {
+      return board.every(cell => cell !== null);
+    }
+
+    function updateStatus(text) {
+      statusElem.textContent = text;
+    }
+
+    function drawCircle(ctx, size) {
+      const center = size / 2;
+      const radius = size * 0.35;
+      ctx.clearRect(0, 0, size, size);
+      const pattern = ctx.createPattern(textureO, 'repeat');
+      ctx.strokeStyle = pattern || 'black';
+      ctx.lineWidth = 6;
+
+      for (let i = 0; i < 6; i++) {
+        ctx.beginPath();
+        ctx.arc(center + (Math.random()-0.5)*1.5, center + (Math.random()-0.5)*1.5, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    function drawCross(ctx, size) {
+      ctx.clearRect(0, 0, size, size);
+      const pattern = ctx.createPattern(textureX, 'repeat');
+      ctx.strokeStyle = pattern || '#333';
+      ctx.lineWidth = 6;
+
+      for (let i = 0; i < 6; i++) {
+        const offset = (Math.random() - 0.5) * 2;
+        ctx.beginPath();
+        ctx.moveTo(20 + offset, 20 + offset);
+        ctx.lineTo(size - 20 + offset, size - 20 + offset);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(size - 20 + offset, 20 + offset);
+        ctx.lineTo(20 + offset, size - 20 + offset);
+        ctx.stroke();
+      }
+    }
+
+    function render() {
+      const canvases = boardElem.querySelectorAll('canvas');
+      canvases.forEach((canvas, idx) => {
+        const size = canvas.width = canvas.height = 120 * window.devicePixelRatio;
+        canvas.style.width = '120px';
+        canvas.style.height = '120px';
+
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        ctx.clearRect(0, 0, size, size);
+
+        if (board[idx] === PLAYER) {
+          drawCircle(ctx, size / window.devicePixelRatio);
+        } else if (board[idx] === AI) {
+          drawCross(ctx, size / window.devicePixelRatio);
+        }
+      });
+    }
+
+    function aiMove() {
+      if (gameOver) return;
+      const emptyIndices = board.map((v, i) => v === null ? i : null).filter(i => i !== null);
+      if (emptyIndices.length === 0) return;
+
+      const choice = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+      board[choice] = AI;
+      render();
+
+      if (checkWin(AI)) {
+        updateStatus('✕ AI 승리!');
+        gameOver = true;
+        return;
+      }
+
+      if (checkDraw()) {
+        updateStatus('무승부!');
+        gameOver = true;
+        return;
+      }
+
+      updateStatus('● 당신 차례');
+    }
+
+    function playerMove(idx) {
+      if (gameOver || board[idx] !== null) return;
+      board[idx] = PLAYER;
+      render();
+
+      if (checkWin(PLAYER)) {
+        updateStatus('● 당신 승리!');
+        gameOver = true;
+        return;
+      }
+
+      if (checkDraw()) {
+        updateStatus('무승부!');
+        gameOver = true;
+        return;
+      }
+
+      updateStatus('✕ AI 차례...');
+      setTimeout(aiMove, 600);
+    }
+
+    boardElem.addEventListener('click', e => {
+      const idx = e.target.closest('canvas')?.dataset.index;
+      if (idx !== undefined) {
+        playerMove(Number(idx));
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      board.fill(null);
+      gameOver = false;
+      updateStatus('● 당신 차례');
+      render();
+    });
+  </script>
+
+</body>
+</html>
