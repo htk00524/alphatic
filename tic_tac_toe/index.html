@@ -13,6 +13,8 @@
       align-items: center;
       padding: 30px;
       color: #222;
+      min-height: 100vh;
+      margin: 0;
     }
 
     h1 {
@@ -20,17 +22,50 @@
       font-size: 2em;
     }
 
+    #gameScreen {
+      background-image: url('sketchbook.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.15);
+      position: relative; /* 프로필 위치를 위한 기준 */
+      width: max-content;
+    }
+
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .active {
+      display: flex;
+    }
+
+    button {
+      background-color: #444;
+      color: #eee;
+      border: 1px solid #222;
+      padding: 10px 20px;
+      font-family: inherit;
+      font-size: 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 10px;
+      box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    }
+
+    button:hover {
+      background-color: #222;
+    }
+
     #board {
       display: grid;
       grid-template-columns: repeat(3, 120px);
       grid-template-rows: repeat(3, 120px);
       gap: 10px;
-
-      background-image: url('sketchbook.png');
-      background-size: cover;
-      background-position: center;
-      background-repeat: none;
-
       padding: 15px;
       border: 3px double #333;
       border-radius: 12px;
@@ -52,44 +87,192 @@
       min-height: 30px;
     }
 
-    #resetBtn {
-      margin-top: 15px;
-      background-color: #444;
-      color: #eee;
-      border: 1px solid #222;
-      padding: 10px 20px;
-      font-family: inherit;
-      font-size: 1rem;
-      border-radius: 10px;
+    /* 프로필 선택 화면 스타일 */
+    #profileScreen {
+      max-width: 400px;
+      gap: 15px;
+      text-align: center;
+    }
+    .avatar-list {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .avatar {
+      width: 70px;
+      height: 70px;
+      border: 3px solid transparent;
+      border-radius: 50%;
       cursor: pointer;
-      box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+      transition: border-color 0.3s ease;
+      object-fit: cover;
+    }
+    .avatar.selected {
+      border-color: #444;
+      box-shadow: 0 0 10px #444;
+    }
+    #nicknameInput {
+      font-family: inherit;
+      font-size: 1.1rem;
+      padding: 8px 12px;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 20px;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+    #nicknameInput:focus {
+      border-color: #444;
     }
 
-    #resetBtn:hover {
-      background-color: #222;
+    /* 게임 화면 오른쪽 위 프로필 표시 */
+    #playerProfile {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255 255 255 / 0.85);
+      border-radius: 12px;
+      padding: 6px 10px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
+      font-size: 0.9rem;
+      user-select: none;
+    }
+    #playerProfile img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
 <body>
 
-  <h1>틱택토</h1>
-
-  <div id="board">
-    <canvas data-index="0"></canvas>
-    <canvas data-index="1"></canvas>
-    <canvas data-index="2"></canvas>
-    <canvas data-index="3"></canvas>
-    <canvas data-index="4"></canvas>
-    <canvas data-index="5"></canvas>
-    <canvas data-index="6"></canvas>
-    <canvas data-index="7"></canvas>
-    <canvas data-index="8"></canvas>
+  <!-- 인트로 화면 -->
+  <div id="introScreen" class="screen active">
+    <h1>틱택토 게임</h1>
+    <button onclick="showScreen('profileScreen')">게임하기</button>
+    <button onclick="showScreen('helpScreen')">게임 방법</button>
   </div>
 
-  <div id="status">● 당신 차례</div>
-  <button id="resetBtn">다시 시작</button>
+  <!-- 프로필 선택 화면 -->
+  <div id="profileScreen" class="screen">
+    <h1>프로필 선택</h1>
+    <div class="avatar-list">
+      <img src="avatar1.png" alt="Avatar 1" class="avatar" data-index="0">
+      <img src="avatar2.png" alt="Avatar 2" class="avatar" data-index="1">
+      <img src="avatar3.png" alt="Avatar 3" class="avatar" data-index="2">
+      <img src="avatar4.png" alt="Avatar 4" class="avatar" data-index="3">
+    </div>
+    <input id="nicknameInput" type="text" placeholder="닉네임을 입력하세요" maxlength="10" />
+    <button id="startGameBtn" disabled>게임 시작</button>
+    <button onclick="showScreen('introScreen')">뒤로가기</button>
+  </div>
+
+  <!-- 설명 화면 -->
+  <div id="helpScreen" class="screen">
+    <h1>게임 설명</h1>
+    <p style="max-width: 500px; text-align: center; font-size: 1.1rem;">
+      틱택토는 두 명이 번갈아 가며 O와 X를 3x3 판에 놓아,<br>
+      가로, 세로, 대각선 중 하나의 줄을 먼저 완성하는 사람이 이기는 게임입니다.<br><br>
+      당신은 ●(O)이며, AI는 ✕(X)입니다. 빈 칸을 클릭해 시작하세요!
+    </p>
+    <button onclick="showScreen('gameScreen')">게임하기</button>
+  </div>
+
+  <!-- 게임 화면 -->
+  <div id="gameScreen" class="screen">
+    <h1>틱택토</h1>
+    <div id="playerProfile" style="display:none;">
+      <img id="profileAvatar" src="" alt="아바타" />
+      <span id="profileName"></span>
+    </div>
+    <div id="board">
+      <canvas data-index="0"></canvas>
+      <canvas data-index="1"></canvas>
+      <canvas data-index="2"></canvas>
+      <canvas data-index="3"></canvas>
+      <canvas data-index="4"></canvas>
+      <canvas data-index="5"></canvas>
+      <canvas data-index="6"></canvas>
+      <canvas data-index="7"></canvas>
+      <canvas data-index="8"></canvas>
+    </div>
+    <div id="status">● 당신 차례</div>
+    <button id="resetBtn">다시 시작</button>
+    <button onclick="showScreen('introScreen')">뒤로가기</button>
+  </div>
 
   <script>
+    // 현재 선택 프로필 데이터 저장용
+    let selectedAvatar = null;
+    let nickname = '';
+
+    // 화면 전환 함수
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+
+      if (screenId === 'gameScreen') {
+        resetGame();
+        showPlayerProfile();
+      }
+    }
+
+    // 프로필 선택 화면 요소들
+    const avatarElems = document.querySelectorAll('#profileScreen .avatar');
+    const nicknameInput = document.getElementById('nicknameInput');
+    const startGameBtn = document.getElementById('startGameBtn');
+
+    avatarElems.forEach(avatar => {
+      avatar.addEventListener('click', () => {
+        avatarElems.forEach(a => a.classList.remove('selected'));
+        avatar.classList.add('selected');
+        selectedAvatar = avatar.src;
+        checkStartEnable();
+      });
+    });
+
+    nicknameInput.addEventListener('input', () => {
+      nickname = nicknameInput.value.trim();
+      checkStartEnable();
+    });
+
+    function checkStartEnable() {
+      if (selectedAvatar && nickname.length > 0) {
+        startGameBtn.disabled = false;
+      } else {
+        startGameBtn.disabled = true;
+      }
+    }
+
+    startGameBtn.addEventListener('click', () => {
+      // 게임 화면으로 이동
+      showScreen('gameScreen');
+    });
+
+    // 게임 화면 오른쪽 위에 프로필 표시
+    const profileDiv = document.getElementById('playerProfile');
+    const profileAvatarImg = document.getElementById('profileAvatar');
+    const profileNameSpan = document.getElementById('profileName');
+
+    function showPlayerProfile() {
+      if (selectedAvatar && nickname) {
+        profileAvatarImg.src = selectedAvatar;
+        profileNameSpan.textContent = nickname;
+        profileDiv.style.display = 'flex';
+      } else {
+        profileDiv.style.display = 'none';
+      }
+    }
+
+    // 기존 게임 코드 시작
     const boardElem = document.getElementById('board');
     const statusElem = document.getElementById('status');
     const resetBtn = document.getElementById('resetBtn');
@@ -239,12 +422,15 @@
     });
 
     resetBtn.addEventListener('click', () => {
-      board.fill(null);
+      resetGame();
+    });
+
+    function resetGame() {
+      board = Array(9).fill(null);
       gameOver = false;
       updateStatus('● 당신 차례');
       render();
-    });
+    }
   </script>
-
 </body>
 </html>
