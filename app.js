@@ -4,7 +4,7 @@ const morgan = require('morgan');
 const nunjucks = require('nunjucks');
 
 const { sequelize } = require('./models');
-
+ 
 const app = express();
 app.set('port', process.env.PORT || 3001);
 app.set('view engine', 'html');
@@ -19,6 +19,7 @@ sequelize.sync({ force: false })
   .catch((err) => {
     console.error(err);
   });
+  
 
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));

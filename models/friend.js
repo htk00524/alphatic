@@ -58,7 +58,7 @@ class Friend extends Sequelize.Model {
   };
 };
 
-module.exports = Friend;
+module.exports = Friend; 
 /*
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define('friends', {

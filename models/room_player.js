@@ -28,7 +28,7 @@ class Room_Player extends Sequelize.Model {
         },
         isDelete: 'CASCADE',
         isUpdate: 'CASCADE',
-      }
+      } 
     }, {
       sequelize,
       timestmap: false,
@@ -48,37 +48,3 @@ class Room_Player extends Sequelize.Model {
 };
 
 module.exports = Room_Player;
-
-/*
-module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('room_players', {
-
-    room_player_id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      allowNull: false,
-    },
-
-    room_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'rooms',
-        key: 'room_Id',
-      },
-      isDelete: 'CASCADE',
-      isUpdate: 'CASCADE',
-    },
-
-    user_id: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: 'users',
-        key: 'user_Id',
-      },
-      isDelete: 'CASCADE',
-      isUpdate: 'CASCADE',
-    },
-
-  });
-};*/

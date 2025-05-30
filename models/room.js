@@ -60,7 +60,7 @@ class Room extends Sequelize.Model {
       }
     }, {
       sequelize,
-      timestmap: false,
+      timestmap: false, 
       underscored: false,
       modelName: 'Room',
       tableName: 'rooms',
@@ -76,77 +76,3 @@ class Room extends Sequelize.Model {
 };
 
 module.exports = Room;
-
-/*
-const Sequelize = require('sequelize');
-
-class Room extends Sequelize.Model {
-  static initiate(sequelize) {
-    Room.init({
-
-      
-    })
-  }
-}
-
-module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('rooms', {
-
-    room_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      primaryKey: true,
-      autoIncrement: true,
-    },
-
-    host_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'users',
-        key: 'user_id',
-      },
-      isDelete: 'CASCADE',
-      isUpdate: 'CASCADE',
-    },
-
-    status: {
-      type: DataTypes.ENUM('waiting', 'playing'),
-      defaultValue: 'waiting',
-      allowNull: false,
-    },
-
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      allowNull: false,
-    },
-
-    game_type: {
-      type: DataTypes.ENUM('3x3', '5x5', 'ultimate'),
-      defaultValue: '3x3',
-      allowNull: false,
-    },
-
-    mode: {
-      type: DataTypes.ENUM('pvp', 'pvai'),
-      defaultValue: 'pvp',
-      allowNull: false,
-    },
-
-    ai_difficulty: {
-      type: DataTypes.ENUM('easy', 'medium', 'hard'),
-      defaultValue: 'medium',
-    },
-
-    secret: {
-      type: DataTypes.BOOLEAN,
-      defaultType: false,
-    },
-
-    password: {
-      type: DataTypes.TINYINT,
-    },
-
-  });
-};*/

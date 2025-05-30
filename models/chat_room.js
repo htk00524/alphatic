@@ -19,7 +19,7 @@ class Chat_Room extends Sequelize.Model {
         type: Sequelize.BOOLEAN,
         defaultValue: false,
       }
-    }, {
+    }, { 
       sequelize,
       timestmap: false,
       underscored: false,
@@ -37,27 +37,3 @@ class Chat_Room extends Sequelize.Model {
 };
 
 module.exports = Chat_Room;
-
-/*
-module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('chat_rooms', {
-
-    chat_room_id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-    },
-
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      allowNull: false,
-    },
-
-    is_group: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-
-  });
-};*/

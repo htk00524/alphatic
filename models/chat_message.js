@@ -39,7 +39,7 @@ class Chat_Message extends Sequelize.Model {
 
       sent_at: {
         type: Sequelize.DATE,
-        defaultValue: Sequelize.NOW,
+        defaultValue: Sequelize.NOW, 
         allowNull: false,
       }
     }, {
@@ -61,50 +61,3 @@ class Chat_Message extends Sequelize.Model {
 };
 
 module.exports = Chat_Message;
-
-/*
-module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('chat_message', {
-
-    message_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      primaryKey: true,
-      autoIncrement: true,
-    },
-
-    chat_room_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'chat_rooms',
-        key: 'chat_room_id',
-      },
-      isDelete: 'CASCADE',
-      isUpdate: 'CASCADE',
-    },
-
-    sender_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'users',
-        key: 'user_id',
-      },
-      isDelete: 'CASCADE',
-      isUpdate: 'CASCADE',
-    },
-
-    message: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-    },
-
-    sent_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      allowNull: false,
-    },
-
-  });
-};*/
