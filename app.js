@@ -2,8 +2,12 @@ const express = require('express');
 const path = require('path');
 const morgan = require('morgan');
 const nunjucks = require('nunjucks');
+const session = require('express-session');
+const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
 const { sequelize } = require('./models');
+const indexRouter = require('./routes');
+const usersRouter = require('./routes/users');
  
 const app = express();
 app.set('port', process.env.PORT || 3001);
@@ -21,11 +25,25 @@ sequelize.sync({ force: false })
   });
   
 
+app.use(session({
+  secret: 'mySecretKey',
+  resave: false,
+  saveUninitialized: false,
+  store: new SequelizeStore({ db: sequelize }),
+}));
+
+// 미들웨어
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: false }));
 
+// 라우터
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
+
+
+// 에러처리
 app.use((req, res, next) => {
   const error = new Error(`${req.method} ${req.url} 라우터가 없습니다.`);
   error.status = 404;

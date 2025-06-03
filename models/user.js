@@ -15,7 +15,7 @@ class User extends Sequelize.Model {
         unique: true,
       },
       password: {
-        type: Sequelize.STRING(17),
+        type: Sequelize.STRING(255),
         allowNull: true,
       },
       win_count: {
@@ -44,7 +44,7 @@ class User extends Sequelize.Model {
       }
   }, {
       sequelize,
-      timestmap: false,
+      timestamps: false,
       underscored: false,
       modelName: 'User',
       tableName: 'users',
