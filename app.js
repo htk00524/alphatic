@@ -4,10 +4,16 @@ const morgan = require('morgan');
 const nunjucks = require('nunjucks');
 const session = require('express-session');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
+const passport = require('passport');
+const passportConfig = require('./passport');
+const authRouter = require('./routes/auth');
+
+require('dotenv').config();
 
 const { sequelize } = require('./models');
 const indexRouter = require('./routes');
 const usersRouter = require('./routes/users');
+// const authRouter = require('./routes/auth');
  
 const app = express();
 app.set('port', process.env.PORT || 3001);
@@ -37,10 +43,13 @@ app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: false }));
+app.use(passport.initialize()); 
+app.use(passport.session()); 
 
 // 라우터
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('auth', authRouter);
 
 
 // 에러처리
