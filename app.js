@@ -13,6 +13,9 @@ require('dotenv').config();
 const { sequelize } = require('./models');
 const indexRouter = require('./routes');
 const usersRouter = require('./routes/users');
+const friendRouter = require('./routes/friend');
+
+
 // const authRouter = require('./routes/auth');
  
 const app = express();
@@ -50,7 +53,7 @@ app.use(passport.session());
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('auth', authRouter);
-
+app.use('/friend', friendRouter);
 
 // 에러처리
 app.use((req, res, next) => {
