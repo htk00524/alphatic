@@ -73,21 +73,21 @@ function clearBoard() {
 }
 
 btnRandom.addEventListener('click', () => {
-  socket.emit('leave-room'); // ✅ 기존 방 나가기
+  socket.emit('leave-room');
   socket.emit('join-random-room');
   roomCodeDisplay.textContent = '';
   status.textContent = '랜덤 매칭 중...';
 });
 
 btnCreateRoom.addEventListener('click', () => {
-  socket.emit('leave-room'); // ✅ 기존 방 나가기
+  socket.emit('leave-room');
   socket.emit('create-room');
   roomCodeDisplay.textContent = '';
   status.textContent = '방을 생성 중...';
 });
 
 btnJoinRoom.addEventListener('click', () => {
-  socket.emit('leave-room'); // ✅ 기존 방 나가기
+  socket.emit('leave-room');
   const code = inputRoomCode.value.trim().toUpperCase();
   if (!code) return alert('방 코드를 입력하세요.');
   socket.emit('join-room', code);
@@ -112,8 +112,6 @@ function appendChatMessage(msg) {
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
-
-// 🔌 소켓 이벤트
 
 socket.on('player-number', num => {
   playerNumber = num;
