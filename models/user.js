@@ -9,15 +9,23 @@ class User extends Sequelize.Model {
         primaryKey: true,
         autoIncrement: true,
       },
+
+      sns_id: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      provider: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      
       username: {
         type: Sequelize.STRING(30),
         allowNull: false,
         unique: true,
       },
-      password: {
-        type: Sequelize.STRING(255),
-        allowNull: true,
-      },
+      
       win_count: {
         type: Sequelize.INTEGER,
         defaultValue: 0,
@@ -51,6 +59,17 @@ class User extends Sequelize.Model {
       paranoid: false,
       charset: 'utf8',
       collate: 'utf8_general_ci',
+
+      indexes: [
+        {
+          unique: true,
+          fields: ['sns_id', 'provider'],
+          where: {
+            sns_id: { [Sequelize.Op.ne]: null },
+            provider: { [Sequelize.Op.ne]: null }
+          }
+        }
+      ]
     });
   }
 

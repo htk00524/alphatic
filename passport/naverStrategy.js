@@ -2,7 +2,7 @@ const NaverStrategy = require('passport-naver').Strategy;
 const {User} = require('../models');
 
 module.exports = (passport) => {
-  passport.user(new NaverStrategy({
+  passport.use(new NaverStrategy({
     clientID: process.env.NAVER_CLIENT_ID, // 네이버에서 받아와야함
     clientSecret: process.env.NAVER_CLIENT_SECRET,
     callbackURL: '/auth/naver/callback',

@@ -2,6 +2,7 @@ const express = require('express');
 const passport = require('passport');
 const router = express.Router();
 
+
 // 카카오 로그인 시작 (카카오 로그인 페이지로 리디렉션)
 router.get('/kakao', passport.authenticate('kakao'));
 

@@ -1,15 +1,28 @@
 const express = require('express');
-const User = require('../models/user');
 const router = express.Router();
-const bcrypt = require('bcrypt');
+
+// 비회원(게스트) 로그인 처리
+router.get('/guest', (req, res) => {
+  req.session.user = {
+    id: 'guest_' + Date.now(),
+    username: 'Guest',
+    is_guest: true,
+  };
+  res.redirect('/');
+});
 
 
-// 회원가입 페이지
-// 일단 주소 /join으로
-router.get('/join', (req, res) =>  {
-  res.render('join');
-})
+// 로그아웃
+router.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/');
+  });
+});
 
+module.exports = router;
+
+
+/*
 // 회원가입 처리
 router.post('/join', async (req, res, next) => {
   const { username, password } = req.body;
@@ -79,13 +92,4 @@ router.post('/login', async (req, res, next) => {
     next(err);
   }
 });
-
-
-// 로그아웃
-router.get('/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.redirect('/');
-  });
-});
-
-module.exports = router;
+*/

@@ -7,24 +7,27 @@ const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const passport = require('passport');
 const passportConfig = require('./passport');
 const authRouter = require('./routes/auth');
+const rankingRouter = require('./routes/ranking');
 
-require('dotenv').config();
+const dotenv = require('dotenv')
+dotenv.config();
 
 const { sequelize } = require('./models');
 const indexRouter = require('./routes');
 const usersRouter = require('./routes/users');
 const friendRouter = require('./routes/friend');
 
-
-// const authRouter = require('./routes/auth');
  
 const app = express();
+passportConfig();
+
 app.set('port', process.env.PORT || 3001);
 app.set('view engine', 'html');
 nunjucks.configure('views', {
   express: app,
   watch: true,
 });
+
 sequelize.sync({ force: false })
   .then(() => {
     console.log('데이터베이스 연결 성공');
@@ -52,8 +55,9 @@ app.use(passport.session());
 // 라우터
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use('auth', authRouter);
+app.use('/auth', authRouter);
 app.use('/friend', friendRouter);
+app.use('/ranking', rankingRouter);
 
 // 에러처리
 app.use((req, res, next) => {
