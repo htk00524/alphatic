@@ -1,14 +1,15 @@
+// ==== server.js ====
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
 const PORT = process.env.PORT || 3000;
-
 app.use(express.static('public'));
 
 const rooms = {};
 const rematchVotes = {};
+const friendRequests = {}; // { fromSocketId: toSocketId }
 
 function findRoomOfSocket(id) {
   for (const room in rooms) {
@@ -25,10 +26,13 @@ function initGame(room) {
 
 function generateRoomCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 5; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
+  let code;
+  do {
+    code = '';
+    for (let i = 0; i < 5; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+  } while (rooms[code]);
   return code;
 }
 
@@ -41,6 +45,30 @@ function checkWin(board, player) {
   return lines.some(([a,b,c]) =>
     board[a] === player && board[b] === player && board[c] === player
   );
+}
+
+function handleLeaveRoom(socket) {
+  const roomCode = findRoomOfSocket(socket.id);
+  if (!roomCode) return;
+
+  const room = rooms[roomCode];
+  room.players = room.players.filter(id => id !== socket.id);
+
+  if (room.players.length === 0) {
+    delete rooms[roomCode];
+    delete rematchVotes[roomCode];
+    console.log(`방 삭제됨: ${roomCode}`);
+  } else {
+    room.closed = true;
+    room.gameOver = true;
+    room.players.forEach(playerId => {
+      io.to(playerId).emit('status', '상대방이 방을 나갔습니다.');
+      io.to(playerId).emit('game-over', {
+        message: '상대방이 나가 게임이 종료되었습니다.',
+        showRematch: false
+      });
+    });
+  }
 }
 
 io.on('connection', (socket) => {
@@ -58,23 +86,15 @@ io.on('connection', (socket) => {
     };
     socket.join(roomCode);
     socket.emit('player-number', 1);
-    socket.emit('status', `방이 생성되었습니다: ${roomCode}`);
     socket.emit('room-code', roomCode);
+    socket.emit('room-created', roomCode);
     console.log(`방 생성: ${roomCode}`);
   });
 
   socket.on('join-room', (roomCode) => {
     const room = rooms[roomCode];
-    if (!room) {
-      socket.emit('error-message', '존재하지 않는 방 코드입니다.');
-      return;
-    }
-    if (room.closed) {
-      socket.emit('error-message', '이 방은 더 이상 사용할 수 없습니다.');
-      return;
-    }
-    if (room.players.length >= 2) {
-      socket.emit('error-message', '방이 가득 찼습니다.');
+    if (!room || room.closed || room.players.length >= 2) {
+      socket.emit('error-message', '방에 참여할 수 없습니다.');
       return;
     }
     room.players.push(socket.id);
@@ -90,19 +110,13 @@ io.on('connection', (socket) => {
 
   socket.on('join-random-room', () => {
     let targetRoom = null;
-
     for (const r in rooms) {
       const room = rooms[r];
-      if (
-        !room.closed &&
-        room.players.length === 1 &&
-        room.players[0] !== socket.id // ✅ 자기 자신이 만든 방 제외
-      ) {
+      if (!room.closed && room.players.length === 1 && room.players[0] !== socket.id) {
         targetRoom = r;
         break;
       }
     }
-
     if (!targetRoom) {
       targetRoom = generateRoomCode();
       rooms[targetRoom] = {
@@ -114,13 +128,11 @@ io.on('connection', (socket) => {
         closed: false,
       };
     }
-
     const room = rooms[targetRoom];
     if (room.closed || room.players.length >= 2) {
       socket.emit('error-message', '랜덤 방 입장이 불가능합니다.');
       return;
     }
-
     room.players.push(socket.id);
     socket.join(targetRoom);
     const playerNum = room.players.length;
@@ -145,20 +157,25 @@ io.on('connection', (socket) => {
 
     const playerIndex = room.players.indexOf(socket.id);
     const playerNum = playerIndex + 1;
-    if (room.turn !== playerNum) return;
-    if (room.board[index] !== null) return;
+    if (room.turn !== playerNum || room.board[index] !== null) return;
 
     room.board[index] = playerNum;
 
     if (checkWin(room.board, playerNum)) {
       room.gameOver = true;
       io.to(roomCode).emit('board-update', room.board);
-      io.to(roomCode).emit('game-over', `플레이어 ${playerNum} 승리!`);
+      io.to(roomCode).emit('game-over', {
+        message: `플레이어 ${playerNum} 승리!`,
+        showRematch: true
+      });
       return;
     } else if (room.board.every(cell => cell !== null)) {
       room.gameOver = true;
       io.to(roomCode).emit('board-update', room.board);
-      io.to(roomCode).emit('game-over', '무승부입니다.');
+      io.to(roomCode).emit('game-over', {
+        message: '무승부입니다.',
+        showRematch: true
+      });
       return;
     }
 
@@ -184,16 +201,11 @@ io.on('connection', (socket) => {
   socket.on('rematch-request', () => {
     const roomCode = findRoomOfSocket(socket.id);
     if (!roomCode) return;
-
-    if (!rematchVotes[roomCode]) {
-      rematchVotes[roomCode] = new Set();
-    }
-
+    if (!rematchVotes[roomCode]) rematchVotes[roomCode] = new Set();
     rematchVotes[roomCode].add(socket.id);
 
     const room = rooms[roomCode];
     const otherPlayer = room.players.find(id => id !== socket.id);
-
     if (otherPlayer) {
       io.to(otherPlayer).emit('chat-message', {
         sender: 0,
@@ -210,23 +222,35 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', () => {
+  socket.on('leave-room', () => {
+    handleLeaveRoom(socket);
+  });
+
+  socket.on('request-profile', () => {
     const roomCode = findRoomOfSocket(socket.id);
     if (!roomCode) return;
-
     const room = rooms[roomCode];
-    room.players = room.players.filter(id => id !== socket.id);
-
-    if (room.players.length === 0) {
-      delete rooms[roomCode];
-      delete rematchVotes[roomCode];
-      console.log(`방 삭제됨: ${roomCode}`);
-    } else {
-      room.closed = true;
-      room.gameOver = true;
-      io.to(roomCode).emit('status', '상대방이 나갔습니다. 게임이 종료됩니다.');
-      io.to(roomCode).emit('game-over', '상대방이 나가 게임이 종료되었습니다.');
+    const opponent = room.players.find(id => id !== socket.id);
+    if (opponent) {
+      io.to(socket.id).emit('show-profile', {
+        opponentId: opponent,
+        wins: Math.floor(Math.random() * 10),
+        losses: Math.floor(Math.random() * 10)
+      });
     }
+  });
+
+  socket.on('send-friend-request', (targetId) => {
+    if (!targetId) return;
+    io.to(targetId).emit('friend-request-received', socket.id);
+  });
+
+  socket.on('accept-friend-request', (fromId) => {
+    io.to(fromId).emit('friend-request-accepted', socket.id);
+  });
+
+  socket.on('disconnect', () => {
+    handleLeaveRoom(socket);
   });
 });
 
