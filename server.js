@@ -1,10 +1,14 @@
-// ✅ server.js
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
-
 const PORT = process.env.PORT || 3000;
+
+// 게임 로직 불러오기
+const gameLogics = {
+  '3x3': require('./gameLogics/gameLogic3x3'),
+};
+
 app.use(express.static('public'));
 
 const rooms = {};
@@ -29,41 +33,6 @@ function findRoomOfSocket(id) {
   return null;
 }
 
-function initGame(roomCode) {
-  const room = rooms[roomCode];
-  room.board = Array(9).fill(null);
-  room.turn = 1;
-  room.gameOver = false;
-}
-
-function checkWin(board, player) {
-  const lines = [
-    [0,1,2], [3,4,5], [6,7,8],
-    [0,3,6], [1,4,7], [2,5,8],
-    [0,4,8], [2,4,6],
-  ];
-  return lines.some(([a,b,c]) => board[a] === player && board[b] === player && board[c] === player);
-}
-
-function handleLeaveRoom(socket) {
-  const roomCode = findRoomOfSocket(socket.id);
-  if (!roomCode) return;
-
-  const room = rooms[roomCode];
-  room.players = room.players.filter(id => id !== socket.id);
-
-  if (room.players.length === 0) {
-    delete rooms[roomCode];
-    delete rematchVotes[roomCode];
-  } else {
-    room.closed = true;
-    room.gameOver = true;
-    const remainingPlayer = room.players[0];
-    io.to(remainingPlayer).emit('status', '상대방이 나갔습니다.');
-    io.to(remainingPlayer).emit('game-over', { message: '상대방이 나가 게임이 종료되었습니다.', showRematch: false });
-  }
-}
-
 io.on('connection', (socket) => {
   console.log('유저 접속:', socket.id);
 
@@ -71,11 +40,8 @@ io.on('connection', (socket) => {
     const code = generateRoomCode();
     rooms[code] = {
       players: [socket.id],
-      board: Array(9).fill(null),
-      turn: 1,
-      gameOver: false,
-      closed: false,
-      matchType: 'manual', // ✅ 수동 생성 방
+      gameInstance: new gameLogics['3x3'](),
+      matchType: 'manual',
     };
     socket.join(code);
     socket.emit('player-number', 1);
@@ -85,45 +51,38 @@ io.on('connection', (socket) => {
 
   socket.on('join-room', (code) => {
     const room = rooms[code];
-    if (!room) return socket.emit('error-message', '존재하지 않는 방입니다.');
-    if (room.closed) return socket.emit('error-message', '입장할 수 없는 방입니다.');
-    if (room.players.length >= 2) return socket.emit('error-message', '방이 가득 찼습니다.');
-    if (room.matchType !== 'manual') return socket.emit('error-message', '해당 방은 수동 입장이 불가능합니다.');
-
+    if (!room || room.players.length >= 2) {
+      return socket.emit('error-message', '방에 입장할 수 없습니다.');
+    }
     room.players.push(socket.id);
     socket.join(code);
     socket.emit('player-number', 2);
     io.to(code).emit('status', '두 명이 모여 게임을 시작합니다.');
-    initGame(code);
     io.to(code).emit('start-game');
-    io.to(code).emit('board-update', room.board);
-    io.to(code).emit('turn', room.turn);
+    io.to(code).emit('board-update', room.gameInstance.board);
+    io.to(code).emit('turn', room.gameInstance.turn);
   });
 
   socket.on('join-random-room', () => {
     let targetRoom = null;
     for (const code in rooms) {
       const room = rooms[code];
-      if (!room.closed && room.matchType === 'random' && room.players.length === 1) {
+      if (room.matchType === 'random' && room.players.length === 1) {
         targetRoom = code;
         break;
       }
     }
+
     if (!targetRoom) {
       targetRoom = generateRoomCode();
       rooms[targetRoom] = {
         players: [],
-        board: Array(9).fill(null),
-        turn: 1,
-        gameOver: false,
-        closed: false,
-        matchType: 'random', // ✅ 랜덤 매칭 방
+        gameInstance: new gameLogics['3x3'](),
+        matchType: 'random',
       };
     }
 
     const room = rooms[targetRoom];
-    if (room.players.length >= 2) return socket.emit('error-message', '랜덤 방 입장이 불가능합니다.');
-
     room.players.push(socket.id);
     socket.join(targetRoom);
     const playerNum = room.players.length;
@@ -133,10 +92,9 @@ io.on('connection', (socket) => {
 
     if (playerNum === 2) {
       io.to(targetRoom).emit('status', '두 명이 모여 게임을 시작합니다.');
-      initGame(targetRoom);
       io.to(targetRoom).emit('start-game');
-      io.to(targetRoom).emit('board-update', room.board);
-      io.to(targetRoom).emit('turn', room.turn);
+      io.to(targetRoom).emit('board-update', room.gameInstance.board);
+      io.to(targetRoom).emit('turn', room.gameInstance.turn);
     }
   });
 
@@ -144,27 +102,17 @@ io.on('connection', (socket) => {
     const code = findRoomOfSocket(socket.id);
     if (!code) return;
     const room = rooms[code];
-    if (room.gameOver) return;
+    const playerNum = room.players.indexOf(socket.id) + 1;
+    const result = room.gameInstance.move(playerNum, index);
+    if (!result) return;
 
-    const playerIdx = room.players.indexOf(socket.id);
-    const playerNum = playerIdx + 1;
-    if (room.turn !== playerNum) return;
-    if (room.board[index] !== null) return;
-
-    room.board[index] = playerNum;
-
-    if (checkWin(room.board, playerNum)) {
-      room.gameOver = true;
-      io.to(code).emit('board-update', room.board);
+    io.to(code).emit('board-update', room.gameInstance.board);
+    if (result === 'win') {
       io.to(code).emit('game-over', { message: `플레이어 ${playerNum} 승리!`, showRematch: true });
-    } else if (room.board.every(cell => cell !== null)) {
-      room.gameOver = true;
-      io.to(code).emit('board-update', room.board);
+    } else if (result === 'draw') {
       io.to(code).emit('game-over', { message: '무승부입니다.', showRematch: true });
     } else {
-      room.turn = 3 - playerNum;
-      io.to(code).emit('board-update', room.board);
-      io.to(code).emit('turn', room.turn);
+      io.to(code).emit('turn', room.gameInstance.turn);
     }
   });
 
@@ -173,7 +121,6 @@ io.on('connection', (socket) => {
     if (!code) return;
     const room = rooms[code];
     const senderIdx = room.players.indexOf(socket.id);
-    if (senderIdx === -1) return;
     const senderNum = senderIdx + 1;
     io.to(code).emit('chat-message', { sender: senderNum, message: msg });
   });
@@ -185,29 +132,39 @@ io.on('connection', (socket) => {
     rematchVotes[code].add(socket.id);
 
     const room = rooms[code];
-    const otherPlayer = room.players.find(id => id !== socket.id);
-    if (otherPlayer) {
-      io.to(otherPlayer).emit('chat-message', {
-        sender: 0,
-        message: '상대가 재대결을 요청했습니다.'
-      });
-    }
-
-    if (rematchVotes[code].size === 2) {
+    if (room.players.length === 2 && rematchVotes[code].size === 2) {
       rematchVotes[code] = new Set();
-      initGame(code);
+      room.gameInstance.reset();
       io.to(code).emit('rematch-start');
-      io.to(code).emit('board-update', room.board);
-      io.to(code).emit('turn', room.turn);
+      io.to(code).emit('board-update', room.gameInstance.board);
+      io.to(code).emit('turn', room.gameInstance.turn);
     }
   });
 
   socket.on('leave-room', () => {
-    handleLeaveRoom(socket);
+    const code = findRoomOfSocket(socket.id);
+    if (!code) return;
+    const room = rooms[code];
+    room.players = room.players.filter(id => id !== socket.id);
+    if (room.players.length === 0) {
+      delete rooms[code];
+    } else {
+      io.to(room.players[0]).emit('status', '상대방이 나갔습니다.');
+      io.to(room.players[0]).emit('game-over', { message: '상대방이 나가 게임이 종료되었습니다.', showRematch: false });
+    }
   });
 
   socket.on('disconnect', () => {
-    handleLeaveRoom(socket);
+    const code = findRoomOfSocket(socket.id);
+    if (!code) return;
+    const room = rooms[code];
+    room.players = room.players.filter(id => id !== socket.id);
+    if (room.players.length === 0) {
+      delete rooms[code];
+    } else {
+      io.to(room.players[0]).emit('status', '상대방이 나갔습니다.');
+      io.to(room.players[0]).emit('game-over', { message: '상대방이 나가 게임이 종료되었습니다.', showRematch: false });
+    }
   });
 });
 
