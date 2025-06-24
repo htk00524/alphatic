@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>틱택토 시작</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="background-container login-bg">
+    <!-- 투명 버튼 영역 -->
+    <button id="guestBtn" class="click-area guest"></button>
+    <button id="googleBtn" class="click-area google"></button>
+    <button id="kakaoBtn" class="click-area kakao"></button>
+    <button id="naverBtn" class="click-area naver"></button>
+    <button id="rulesBtn" class="click-area rules"></button>
+  </div>
+
+  <!-- 닉네임 입력 모달 -->
+  <div id="nicknameModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>닉네임 입력</h2>
+      <input type="text" id="nicknameInput" placeholder="닉네임 입력" />
+      <button id="confirmNicknameBtn" disabled>시작하기</button>
+    </div>
+  </div>
+
+  <script type="module">
+  import { saveGuestNickname } from './js/auth.js';
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const confirmBtn = document.getElementById("confirmNicknameBtn");
+    const nicknameInput = document.getElementById("nicknameInput");
+
+    // 🔸 게스트 닉네임 확인 버튼
+    confirmBtn.addEventListener("click", async () => {
+      const nickname = nicknameInput.value.trim();
+      if (!nickname) return;
+
+      try {
+        // ✅ 백엔드에 닉네임 저장 및 토큰 발급 요청
+        const result = await saveGuestNickname(nickname);
+
+        console.log('로그인 성공:', result); // 🔍 디버깅용
+
+        // 페이지 이동 (예: main.html)
+        window.location.href = "main.html";
+      } catch (err) {
+        alert("로그인 실패: " + err.message);
+      }
+    });
+  });
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const guestBtn = document.getElementById("guestBtn");
+    const googleBtn = document.getElementById("googleBtn");
+    const kakaoBtn = document.getElementById("kakaoBtn");
+    const naverBtn = document.getElementById("naverBtn");
+    const rulesBtn = document.getElementById("rulesBtn");
+
+    const modal = document.getElementById("nicknameModal");
+    const nicknameInput = document.getElementById("nicknameInput");
+    const confirmBtn = document.getElementById("confirmNicknameBtn");
+
+    // 🔸 게스트 버튼 클릭 시 닉네임 모달 열기
+    guestBtn.addEventListener("click", () => {
+      modal.classList.remove("hidden");
+    });
+
+    nicknameInput.addEventListener("input", () => {
+      confirmBtn.disabled = nicknameInput.value.trim() === "";
+    });
+
+    // 🔹 소셜 로그인 버튼들
+    googleBtn.addEventListener("click", () => loginWithGoogle()); // ✅ Google 로그인
+    kakaoBtn.addEventListener("click", () => loginWithKakao());   // ✅ Kakao 로그인
+    naverBtn.addEventListener("click", () => loginWithNaver());   // ✅ Naver 로그인
+
+    // 🔸 규칙 버튼 클릭 시 규칙 페이지 열기
+    rulesBtn.addEventListener("click", () => {
+      window.open("rules.html", "_blank");
+    });
+  });
+</script>

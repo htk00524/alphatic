@@ -1,0 +1,90 @@
+.main-container {
+  position: relative;
+  width: 100vw;  /* 화면 너비 100% */
+  height: 100vh; /* 화면 높이 100% */
+}
+
+/* 기본 버튼 스타일 */
+.transparent-btn {
+  position: absolute; /* 절대 위치 */
+  height: 60px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+/* 디버그 모드 */
+.transparent-btn.debug {
+  background: rgba(255, 0, 0, 0.3);
+  border: 1px dashed red;
+}
+
+
+
+.btn-ai {
+  top: 41vh;    
+  left: 46%;   
+  width: 322px;
+  transform: translateX(-50%);
+}
+
+.btn-random {
+  top: 52vh;
+  left: 37vw; 
+  right: 44vw; 
+   
+}
+
+.btn-create {
+  top: 63vh;
+  left: 37vw; 
+  right: 44vw; 
+   
+}
+
+.btn-input-code {
+  bottom: 33vh; 
+  left: 11vw;
+  width: 459px;
+}
+
+
+
+/* 일반 텍스트 입력 및 버튼 스타일 (모달 등) */
+button, input {
+  margin: 10px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
+}
+
+/* 모달 스타일 (기존 유지) */
+.modal {
+  position: fixed;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -30%);
+  background: rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+  display: none;
+  width: 280px;
+  box-sizing: border-box;
+}
+
+.modal-content input {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.modal.show {
+  display: block;
+}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Main</title>
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body style="background-image: url('img/back_main.png'); background-size: cover;">
+  <div class="main-container">
+    <button id="btn-ai" class="transparent-btn debug btn-ai"></button>
+    <button id="btn-random" class="transparent-btn debug btn-random"></button>
+    <button id="btn-create" class="transparent-btn debug btn-create"></button>
+    <button id="btn-input-code" class="transparent-btn debug btn-input-code"></button>
+   
+  </div>
+
+  <!-- 모달: 방 생성 -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <h3>방 만들기</h3>
+      <input type="text" id="room-name" placeholder="방 이름" />
+      <input type="text" id="room-key" placeholder="방 코드" />
+      <button id="btn-create-room">방 생성</button>
+      <button id="btn-close">닫기</button>
+    </div>
+  </div>
+
+  <!-- 모달: 코드 입력 -->
+  <div id="code-modal" class="modal">
+    <div class="modal-content">
+      <h3>입장 코드 입력</h3>
+      <input type="text" id="room-code" placeholder="방 코드 입력" />
+      <button id="btn-join-room">입장하기</button>
+      <button id="btn-close-code">닫기</button>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

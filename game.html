@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>틱택토 게임</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="background-container game-bg_center-mode">
+    <div class="user-info">
+      <h2 id="userNickname">게스트</h2>
+      <button id="resetBtn">다시하기</button>
+    </div>
+    
+    <div class="game-container">
+      <div id="status">● 당신 차례</div>
+      <div id="board" class="game-board"></div>
+        
+      
+      <div class="score-board">
+        <div class="score-item">
+          <span>당신 승리:</span>
+          <span id="playerWins">0</span>
+        </div>
+        <div class="score-item">
+          <span>AI 승리:</span>
+          <span id="aiWins">0</span>
+        </div>
+        <div class="score-item">
+          <span>무승부:</span>
+          <span id="draws">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/ai.js"></script>
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>
