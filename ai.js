@@ -1,132 +1,146 @@
-function getAIMove(board, difficulty, mode) {
-  const SIZE = mode === "5x5" ? 5 : 3;
-  const WIN_COUNT = SIZE;
-  const ai = "O";
-  const player = "X";
+// game/ai.js
 
-  const MAX_DEPTH = mode === "5x5" ? 3 : 10; // ★ 깊이 제한
+function getAvailableMoves(board) {
+  const moves = [];
+  const active = board.activeBoardIndex;
 
-  // 승리 체크는 동일
-  const checkWinner = (b, p) => {
-    for (let row = 0; row < SIZE; row++) {
-      for (let col = 0; col < SIZE; col++) {
-        if (
-          checkLine(b, row, col, 0, 1, p) ||
-          checkLine(b, row, col, 1, 0, p) ||
-          checkLine(b, row, col, 1, 1, p) ||
-          checkLine(b, row, col, 1, -1, p)
-        ) return true;
+  for (let b = 0; b < 9; b++) {
+    const sb = board.boards[b];
+    if (active !== null && b !== active) continue;
+    if (sb.winner) continue;
+
+    for (let i = 0; i < 9; i++) {
+      if (!sb.cells[i]) {
+        moves.push({ boardIndex: b, cellIndex: i });
       }
     }
-    return false;
-  };
+  }
 
-  const checkLine = (b, row, col, dRow, dCol, p) => {
-    for (let i = 0; i < WIN_COUNT; i++) {
-      let r = row + i * dRow;
-      let c = col + i * dCol;
-      if (r < 0 || c < 0 || r >= SIZE || c >= SIZE || b[r * SIZE + c] !== p) return false;
+  return moves;
+}
+
+function getRandomMove(board) {
+  const moves = getAvailableMoves(board);
+  return moves[Math.floor(Math.random() * moves.length)];
+}
+
+function findWinningMove(sb, player) {
+  const lines = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+  for (const [a, b, c] of lines) {
+    const line = [sb.cells[a], sb.cells[b], sb.cells[c]];
+    const counts = line.filter(cell => cell === player).length;
+    const emptyIndex = [a, b, c].find(i => !sb.cells[i]);
+    if (counts === 2 && emptyIndex !== undefined) {
+      return emptyIndex;
     }
-    return true;
-  };
+  }
+  return null;
+}
 
-  const isDraw = (b) => b.every(cell => cell !== "");
+function getNormalMove(board, aiPlayer = 'O') {
+  const humanPlayer = aiPlayer === 'O' ? 'X' : 'O';
+  const moves = getAvailableMoves(board);
 
-  const getRandomMove = () => {
-    const available = board.map((v, i) => v === "" ? i : null).filter(v => v !== null);
-    return available[Math.floor(Math.random() * available.length)];
-  };
+  for (const move of moves) {
+    const sb = board.boards[move.boardIndex];
+    const winIdx = findWinningMove(sb, aiPlayer);
+    if (winIdx !== null) {
+      return { boardIndex: move.boardIndex, cellIndex: winIdx };
+    }
+  }
 
-  // 🧠 휴리스틱 평가 함수
-  function evaluate(b) {
-    let score = 0;
-    score += countLines(b, ai) * 10;
-    score -= countLines(b, player) * 10;
+  for (const move of moves) {
+    const sb = board.boards[move.boardIndex];
+    const blockIdx = findWinningMove(sb, humanPlayer);
+    if (blockIdx !== null) {
+      return { boardIndex: move.boardIndex, cellIndex: blockIdx };
+    }
+  }
+
+  return getRandomMove(board);
+}
+
+function evaluateBoard(board, aiPlayer) {
+  if (board.winner === aiPlayer) return 100;
+  if (board.winner && board.winner !== 'draw') return -100;
+  return 0;
+}
+
+function minimax(board, depth, isMax, alpha, beta, aiPlayer, maxDepth) {
+  const score = evaluateBoard(board, aiPlayer);
+  if (depth >= maxDepth || board.winner) {
     return score;
   }
 
-  // 🧠 특정 플레이어가 이길 가능성이 있는 줄 수를 셈
-  function countLines(b, p) {
-    let count = 0;
-    for (let row = 0; row < SIZE; row++) {
-      for (let col = 0; col < SIZE; col++) {
-        const directions = [
-          [0, 1], [1, 0], [1, 1], [1, -1]
-        ];
-        directions.forEach(([dRow, dCol]) => {
-          let matches = 0;
-          let blocked = false;
-          for (let i = 0; i < WIN_COUNT; i++) {
-            let r = row + i * dRow;
-            let c = col + i * dCol;
-            if (r < 0 || c < 0 || r >= SIZE || c >= SIZE) {
-              blocked = true;
-              break;
-            }
-            const cell = b[r * SIZE + c];
-            if (cell === p) matches++;
-            else if (cell !== "") blocked = true;
-          }
-          if (!blocked && matches > 0) count++;
-        });
-      }
-    }
-    return count;
-  }
+  const moves = getAvailableMoves(board);
+  let best = isMax ? -Infinity : Infinity;
 
-  // 🔁 제한 깊이 Minimax with evaluation
-  const minimax = (b, depth, isMax) => {
-    if (checkWinner(b, ai)) return 1000 - depth;
-    if (checkWinner(b, player)) return -1000 + depth;
-    if (isDraw(b) || depth >= MAX_DEPTH) return evaluate(b); // ★ 깊이 제한 도달 시 평가
+  for (const move of moves) {
+    // 가상으로 둠
+    const temp = boardCopy(board);
+    temp.makeMove(move.boardIndex, move.cellIndex);
+
+    const val = minimax(temp, depth + 1, !isMax, alpha, beta, aiPlayer, maxDepth);
 
     if (isMax) {
-      let maxEval = -Infinity;
-      b.forEach((cell, i) => {
-        if (cell === "") {
-          b[i] = ai;
-          let eval = minimax(b, depth + 1, false);
-          b[i] = "";
-          maxEval = Math.max(maxEval, eval);
-        }
-      });
-      return maxEval;
+      best = Math.max(best, val);
+      alpha = Math.max(alpha, best);
     } else {
-      let minEval = Infinity;
-      b.forEach((cell, i) => {
-        if (cell === "") {
-          b[i] = player;
-          let eval = minimax(b, depth + 1, true);
-          b[i] = "";
-          minEval = Math.min(minEval, eval);
-        }
-      });
-      return minEval;
+      best = Math.min(best, val);
+      beta = Math.min(beta, best);
     }
-  };
 
-  // 최적의 수 찾기
-  const getBestMove = () => {
-    let bestScore = -Infinity;
-    let move = null;
-    board.forEach((cell, i) => {
-      if (cell === "") {
-        board[i] = ai;
-        let score = minimax(board, 0, false);
-        board[i] = "";
-        if (score > bestScore) {
-          bestScore = score;
-          move = i;
-        }
-      }
-    });
-    return move;
-  };
+    if (beta <= alpha) break; // 가지치기
+  }
 
-  // 난이도 분기
-  if (difficulty === "easy") return getRandomMove();
-  if (difficulty === "medium") return Math.random() < 0.5 ? getRandomMove() : getBestMove();
-  return getBestMove(); // hard
+  return best;
 }
 
-module.exports = { getAIMove };
+function boardCopy(originalBoard) {
+  const { UltimateBoard } = require('./board');
+  const newBoard = new UltimateBoard();
+
+  newBoard.currentPlayer = originalBoard.currentPlayer;
+  newBoard.activeBoardIndex = originalBoard.activeBoardIndex;
+  newBoard.winner = originalBoard.winner;
+
+  for (let i = 0; i < 9; i++) {
+    newBoard.boards[i].cells = [...originalBoard.boards[i].cells];
+    newBoard.boards[i].winner = originalBoard.boards[i].winner;
+  }
+
+  return newBoard;
+}
+
+function getBestMove(board, aiPlayer = 'O') {
+  const maxDepth = 3; // 너무 깊게 하면 느려짐
+  const moves = getAvailableMoves(board);
+
+  let bestScore = -Infinity;
+  let bestMove = null;
+
+  for (const move of moves) {
+    const temp = boardCopy(board);
+    temp.makeMove(move.boardIndex, move.cellIndex);
+
+    const score = minimax(temp, 1, false, -Infinity, Infinity, aiPlayer, maxDepth);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = move;
+    }
+  }
+
+  return bestMove || getRandomMove(board);
+}
+
+module.exports = {
+  getRandomMove,
+  getNormalMove,
+  getBestMove,
+  getAvailableMoves,
+};
