@@ -1,104 +1,56 @@
 const socket = io();
 
-const board = document.getElementById('board');
-const status = document.getElementById('status');
+let currentMode = '3x3';
+let myPlayerNum = null;
+let boardData = null;
+let currentPlayer = null;
+let activeBoardIndex = null;
+let gameOver = false;
+
+// UI 요소
+const boardElem = document.getElementById('board');
+const statusElem = document.getElementById('status');
 const chatBox = document.getElementById('chat-box');
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
-
+const gameModeSelect = document.getElementById('game-mode-select');
 const btnRandom = document.getElementById('btn-random');
-const btnCreateRoom = document.getElementById('btn-create-room');
-const btnJoinRoom = document.getElementById('btn-join-room');
+const btnCreate = document.getElementById('btn-create-room');
+const btnJoin = document.getElementById('btn-join-room');
 const inputRoomCode = document.getElementById('input-room-code');
 const roomCodeDisplay = document.getElementById('room-code-display');
 const btnRematch = document.getElementById('btn-rematch');
 
-let playerNumber = 0;
-let myTurn = false;
-let boardState = Array(9).fill(null);
-
-function createBoard() {
-  board.innerHTML = '';
-  for (let i = 0; i < 9; i++) {
-    const cell = document.createElement('div');
-    cell.classList.add('cell');
-    cell.dataset.index = i;
-    cell.addEventListener('click', onCellClick);
-    board.appendChild(cell);
+chatForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (chatInput.value.trim() !== '') {
+    socket.emit('chat-message', chatInput.value.trim());
+    chatInput.value = '';
   }
-}
+});
 
-function onCellClick(e) {
-  if (!myTurn) return;
-  const idx = +e.target.dataset.index;
-  if (boardState[idx] !== null) return;
-  socket.emit('move', idx);
-}
-
-function updateBoard(newBoard) {
-  boardState = newBoard;
-  const cells = board.querySelectorAll('.cell');
-  cells.forEach((cell, idx) => {
-    cell.textContent = '';
-    cell.classList.remove('x', 'o', 'disabled');
-    if (boardState[idx] === 1) {
-      cell.textContent = 'X';
-      cell.classList.add('x');
-    } else if (boardState[idx] === 2) {
-      cell.textContent = 'O';
-      cell.classList.add('o');
-    }
-  });
-}
-
-function disableBoard() {
-  const cells = board.querySelectorAll('.cell');
-  cells.forEach(cell => cell.classList.add('disabled'));
-  myTurn = false;
-}
-
-function enableBoard() {
-  const cells = board.querySelectorAll('.cell');
-  cells.forEach(cell => cell.classList.remove('disabled'));
-  myTurn = true;
-}
-
-function clearBoard() {
-  boardState.fill(null);
-  const cells = board.querySelectorAll('.cell');
-  cells.forEach(cell => {
-    cell.textContent = '';
-    cell.classList.remove('x', 'o', 'disabled');
-  });
-}
+gameModeSelect.addEventListener('change', () => {
+  currentMode = gameModeSelect.value;
+  resetGameUI();
+  updateButtons();
+});
 
 btnRandom.addEventListener('click', () => {
-  socket.emit('leave-room');
-  socket.emit('join-random-room');
-  roomCodeDisplay.textContent = '';
-  status.textContent = '랜덤 매칭 중...';
+  socket.emit('join-random-room', currentMode);
+  resetGameUI();
 });
 
-btnCreateRoom.addEventListener('click', () => {
-  socket.emit('leave-room');
-  socket.emit('create-room');
-  roomCodeDisplay.textContent = '';
-  status.textContent = '방을 생성 중...';
+btnCreate.addEventListener('click', () => {
+  socket.emit('create-room', currentMode);
+  resetGameUI();
 });
 
-btnJoinRoom.addEventListener('click', () => {
-  socket.emit('leave-room');
+btnJoin.addEventListener('click', () => {
   const code = inputRoomCode.value.trim().toUpperCase();
-  if (!code) return alert('방 코드를 입력하세요.');
-  socket.emit('join-room', code);
-});
-
-chatForm.addEventListener('submit', e => {
-  e.preventDefault();
-  const message = chatInput.value.trim();
-  if (!message) return;
-  socket.emit('chat-message', message);
-  chatInput.value = '';
+  if (code) {
+    socket.emit('join-room', code, currentMode);
+    resetGameUI();
+  }
 });
 
 btnRematch.addEventListener('click', () => {
@@ -106,79 +58,212 @@ btnRematch.addEventListener('click', () => {
   btnRematch.style.display = 'none';
 });
 
-function appendChatMessage(msg) {
-  const div = document.createElement('div');
-  div.textContent = msg;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
+function resetGameUI() {
+  boardElem.innerHTML = '';
+  statusElem.textContent = '대기 중...';
+  roomCodeDisplay.textContent = '';
+  gameOver = false;
+  boardData = null;
+  currentPlayer = null;
+  activeBoardIndex = null;
 }
 
-socket.on('player-number', num => {
-  playerNumber = num;
-  status.textContent = `플레이어 ${playerNumber}로 게임에 참여했습니다.`;
+function updateButtons() {
+  // AI 모드일 때 랜덤매칭 버튼 숨기기
+  if (currentMode.includes('ai')) {
+    btnRandom.style.display = 'none';
+    btnJoin.style.display = 'none';
+  } else {
+    btnRandom.style.display = 'inline-block';
+    btnJoin.style.display = 'inline-block';
+  }
+}
+
+function renderBoard() {
+  boardElem.innerHTML = '';
+
+  if (!boardData) return;
+
+  if (currentMode === 'ultimate' || currentMode === 'ultimate-ai') {
+    // Ultimate 보드 (9개의 3x3 작은 보드)
+    boardElem.style.display = 'grid';
+    boardElem.style.gridTemplateColumns = 'repeat(3, auto)';
+    boardElem.style.gap = '10px';
+
+    for (let b = 0; b < 9; b++) {
+      const smallBoardDiv = document.createElement('div');
+      smallBoardDiv.className = 'small-board';
+      smallBoardDiv.style.cssText = `
+        display: grid;
+        grid-template-columns: repeat(3, 40px);
+        grid-gap: 2px;
+        padding: 6px;
+        border: 2px solid ${(activeBoardIndex === null || activeBoardIndex === b) ? '#3366cc' : '#ccc'};
+        border-radius: 6px;
+        background-color: ${(activeBoardIndex === null || activeBoardIndex === b) ? '#eef4ff' : '#f9f9f9'};
+        user-select: none;
+      `;
+
+      const smallBoard = boardData.boards[b];
+      for (let i = 0; i < 9; i++) {
+        const cellDiv = document.createElement('div');
+        cellDiv.className = 'cell';
+        cellDiv.style.width = '40px';
+        cellDiv.style.height = '40px';
+        cellDiv.style.display = 'flex';
+        cellDiv.style.alignItems = 'center';
+        cellDiv.style.justifyContent = 'center';
+        cellDiv.style.fontSize = '26px';
+        cellDiv.style.fontWeight = 'bold';
+        cellDiv.style.cursor = 'default';
+        cellDiv.style.border = '1px solid #999';
+        cellDiv.style.userSelect = 'none';
+
+        if (smallBoard.cells[i]) {
+          cellDiv.textContent = smallBoard.cells[i];
+          cellDiv.classList.add(smallBoard.cells[i].toLowerCase());
+        }
+
+        if (!smallBoard.winner && !gameOver &&
+            currentPlayer === (myPlayerNum === 1 ? 'X' : 'O') &&
+            (activeBoardIndex === null || activeBoardIndex === b) &&
+            !cellDiv.textContent) {
+          cellDiv.style.cursor = 'pointer';
+          cellDiv.addEventListener('click', () => {
+            socket.emit('move', { boardIndex: b, cellIndex: i });
+          });
+        } else {
+          cellDiv.classList.add('disabled');
+        }
+
+        smallBoardDiv.appendChild(cellDiv);
+      }
+
+      // 승리한 작은 보드 강조
+      if (smallBoard.winner && smallBoard.winner !== 'draw') {
+        smallBoardDiv.style.backgroundColor = smallBoard.winner === 'X' ? '#cce5ff' : '#ffd6d6';
+      }
+
+      boardElem.appendChild(smallBoardDiv);
+    }
+  } else {
+    // 3x3, 5x5, ai-3x3, ai-5x5 보드
+    const size = (currentMode === '5x5' || currentMode === 'ai-5x5') ? 5 : 3;
+    boardElem.style.display = 'grid';
+    boardElem.style.gridTemplateColumns = `repeat(${size}, 60px)`;
+    boardElem.style.gridGap = '4px';
+
+    boardData.forEach((cell, idx) => {
+      const cellDiv = document.createElement('div');
+      cellDiv.className = 'cell';
+      cellDiv.style.width = '60px';
+      cellDiv.style.height = '60px';
+      cellDiv.style.display = 'flex';
+      cellDiv.style.alignItems = 'center';
+      cellDiv.style.justifyContent = 'center';
+      cellDiv.style.fontSize = '40px';
+      cellDiv.style.fontWeight = 'bold';
+      cellDiv.style.border = '1.5px solid #666';
+      cellDiv.style.cursor = 'default';
+      cellDiv.style.userSelect = 'none';
+
+      if (cell === 1) {
+        cellDiv.textContent = 'X';
+        cellDiv.classList.add('x');
+      } else if (cell === 2) {
+        cellDiv.textContent = 'O';
+        cellDiv.classList.add('o');
+      }
+
+      if (!cellDiv.textContent && currentPlayer === myPlayerNum && !gameOver) {
+        cellDiv.style.cursor = 'pointer';
+        cellDiv.addEventListener('click', () => {
+          socket.emit('move', { index: idx });
+        });
+      } else {
+        cellDiv.classList.add('disabled');
+      }
+
+      boardElem.appendChild(cellDiv);
+    });
+  }
+}
+
+socket.on('player-number', (num) => {
+  myPlayerNum = num;
+  statusElem.textContent = `당신은 플레이어 ${myPlayerNum} 입니다.`;
 });
 
-socket.on('room-code', code => {
+socket.on('room-code', (code) => {
   roomCodeDisplay.textContent = `방 코드: ${code}`;
 });
 
-socket.on('room-created', roomCode => {
-  roomCodeDisplay.textContent = `방 코드: ${roomCode}`;
-  appendChatMessage(`[시스템] 방이 생성되었습니다: ${roomCode}`);
+socket.on('status', (msg) => {
+  const p = document.createElement('p');
+  p.textContent = `[시스템] ${msg}`;
+  p.style.color = '#666';
+  chatBox.appendChild(p);
+  chatBox.scrollTop = chatBox.scrollHeight;
 });
 
-socket.on('status', msg => {
-  appendChatMessage(`[시스템] ${msg}`);
+socket.on('chat-message', ({ sender, message }) => {
+  const p = document.createElement('p');
+  p.innerHTML = `<strong>플레이어 ${sender}:</strong> ${message}`;
+  chatBox.appendChild(p);
+  chatBox.scrollTop = chatBox.scrollHeight;
 });
 
-socket.on('error-message', msg => {
-  alert(msg);
-});
-
-socket.on('start-game', () => {
-  clearBoard();
-  status.textContent = `게임 시작! 플레이어 ${playerNumber}의 턴입니다.`;
-  enableBoard();
-});
-
-socket.on('board-update', boardArr => {
-  updateBoard(boardArr);
-});
-
-socket.on('turn', turnNum => {
-  myTurn = (turnNum === playerNumber);
-  if (myTurn) {
-    status.textContent = '당신의 차례입니다.';
-    enableBoard();
+socket.on('board-update', (board) => {
+  boardData = board;
+  if (currentMode === 'ultimate' || currentMode === 'ultimate-ai') {
+    currentPlayer = board.currentPlayer;
+    activeBoardIndex = board.activeBoardIndex;
+    gameOver = !!board.winner;
   } else {
-    status.textContent = '상대방 차례입니다.';
-    disableBoard();
+    // 일반 3x3, 5x5, AI 모드는 배열 + turn 따로
+    currentPlayer = board.turn || currentPlayer;
+    gameOver = false; // 필요 시 조정 가능
   }
+  renderBoard();
 });
 
-socket.on('game-over', data => {
-  status.textContent = data.message;
-  disableBoard();
-  if (data.showRematch) {
-    btnRematch.style.display = 'inline-block';
-  } else {
-    btnRematch.style.display = 'none';
-  }
+socket.on('turn', (player) => {
+  currentPlayer = player;
+  updateStatus();
+  renderBoard();
+});
+
+socket.on('game-over', ({ message, showRematch }) => {
+  statusElem.textContent = message;
+  gameOver = true;
+  btnRematch.style.display = showRematch ? 'block' : 'none';
 });
 
 socket.on('rematch-start', () => {
-  clearBoard();
-  enableBoard();
-  status.textContent = `재대결 시작! 플레이어 ${playerNumber}의 턴입니다.`;
+  statusElem.textContent = '재대결 시작!';
+  gameOver = false;
   btnRematch.style.display = 'none';
+  boardData = null;
+  renderBoard();
 });
 
-socket.on('chat-message', data => {
-  if (data.sender === playerNumber) {
-    appendChatMessage(`나: ${data.message}`);
+socket.on('error-message', (msg) => {
+  alert(msg);
+});
+
+function updateStatus() {
+  if (gameOver) return;
+  if (!currentPlayer) {
+    statusElem.textContent = '대기 중...';
   } else {
-    appendChatMessage(`상대: ${data.message}`);
+    if (currentMode === 'ultimate' || currentMode === 'ultimate-ai') {
+      const playerText = currentPlayer === (myPlayerNum === 1 ? 'X' : 'O') ? '당신 차례' : '상대 차례';
+      statusElem.textContent = `턴: ${playerText}`;
+    } else {
+      statusElem.textContent = `턴: 플레이어 ${currentPlayer}`;
+    }
   }
-});
+}
 
-createBoard();
+resetGameUI();
+updateButtons();
