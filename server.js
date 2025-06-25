@@ -66,7 +66,6 @@ io.on('connection', (socket) => {
       socket.emit('room-code', code);
       socket.emit('room-created', code);
 
-      // AI 모드인 경우 즉시 시작
       if (mode.startsWith('ai')) {
         io.to(code).emit('status', 'AI와 게임을 시작합니다.');
         io.to(code).emit('start-game');
@@ -180,21 +179,34 @@ io.on('connection', (socket) => {
         io.to(code).emit('turn', room.gameInstance.turn);
       }
 
-      // AI 모드 처리
-      const isAIMode = room.mode === 'ai-3x3' || room.mode === 'ai-5x5';
+      // ✅ AI 모드 처리 + 디버깅 로그 추가
+      const isAIMode = ['ai-3x3', 'ai-5x5', 'ultimate-ai'].includes(room.mode);
       if (isAIMode && room.gameInstance.turn === 2) {
-        const aiMove = room.gameInstance.getAIMove();
-        const aiResult = room.gameInstance.move(2, aiMove);
+        setTimeout(() => {
+          console.log('[AI모드]', room.mode);
+          console.log('[현재턴]', room.gameInstance.turn);
+          const aiMove = room.gameInstance.getAIMove();
+          console.log('[AI선택]', aiMove);
 
-        io.to(code).emit('board-update', room.gameInstance.board);
+          if (aiMove == null) return;
 
-        if (aiResult === 'win') {
-          io.to(code).emit('game-over', { message: 'AI 승리!', showRematch: true });
-        } else if (aiResult === 'draw') {
-          io.to(code).emit('game-over', { message: '무승부입니다.', showRematch: true });
-        } else {
-          io.to(code).emit('turn', room.gameInstance.turn);
-        }
+          let aiResult;
+          if (room.mode === 'ultimate-ai') {
+            aiResult = room.gameInstance.move(2, aiMove.boardIndex, aiMove.cellIndex);
+          } else {
+            aiResult = room.gameInstance.move(2, aiMove);
+          }
+
+          io.to(code).emit('board-update', room.gameInstance.board);
+
+          if (aiResult === 'win') {
+            io.to(code).emit('game-over', { message: 'AI 승리!', showRematch: true });
+          } else if (aiResult === 'draw') {
+            io.to(code).emit('game-over', { message: '무승부입니다.', showRematch: true });
+          } else {
+            io.to(code).emit('turn', room.gameInstance.turn);
+          }
+        }, 500);
       }
     } catch (e) {
       console.error('move 에러:', e);
@@ -243,9 +255,9 @@ io.on('connection', (socket) => {
       room.players = room.players.filter(id => id !== socket.id);
 
       if (room.players.length === 0) {
-        delete rooms[code];  // 방 완전 삭제
+        delete rooms[code];
       } else if (room.players.length === 1) {
-        room.gameInstance.reset();  // 게임 상태 초기화
+        room.gameInstance.reset();
         const remainingPlayer = room.players[0];
         io.to(remainingPlayer).emit('status', '상대방이 나갔습니다.');
         io.to(remainingPlayer).emit('game-over', { message: '상대방이 나가 게임이 종료되었습니다.', showRematch: false });
@@ -263,9 +275,9 @@ io.on('connection', (socket) => {
       room.players = room.players.filter(id => id !== socket.id);
 
       if (room.players.length === 0) {
-        delete rooms[code];  // 방 완전 삭제
+        delete rooms[code];
       } else if (room.players.length === 1) {
-        room.gameInstance.reset();  // 게임 상태 초기화
+        room.gameInstance.reset();
         const remainingPlayer = room.players[0];
         io.to(remainingPlayer).emit('status', '상대방이 나갔습니다.');
         io.to(remainingPlayer).emit('game-over', { message: '상대방이 나가 게임이 종료되었습니다.', showRematch: false });
