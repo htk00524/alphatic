@@ -1,0 +1,104 @@
+
+.box1 {
+  width: 80vw;
+  height: 100vw;
+  background-color: #CBD5E3;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+    z-index: 0; /* 가장 아래 */
+}
+
+.frame {
+  width: 110%;
+  height: 95%;
+  margin: 70px 0px -35px -35px;
+  position: relative; /* box1 내부 위치 */
+  z-index: 0; /* 부모와 같거나 낮게 */
+  user-select: none;
+  -webkit-user-drag: none;  /* 크롬, 사파리 */
+  -moz-user-drag: none;     /* 파이어폭스 */
+  -o-user-drag: none;
+
+  pointer-events: none; /* 이미지에 포인터 이벤트도 막기(필요시) */
+}
+
+.gaming {
+  position: relative; /* 꼭 필요 */
+  z-index: 1000;
+}
+
+
+/* ✅ 나머지 컨텐츠는 z-index: 2 이상으로 올리기 */
+nav,
+.main-container,
+.modal,
+.other-top-layer {
+  position: relative;
+  z-index: 2;
+}
+
+
+nav {
+  background-color: #120E27;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  z-index: 9999;
+  font-family: 'silver', sans-serif;
+  font-size: 1.6rem;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+nav ul li {
+  margin-left: 20px;
+}
+
+/* 오른쪽 메뉴 */
+.nav-right li {
+  margin-left: 50px; /* 규칙, 랭킹 간 간격 넓게 */
+}
+
+nav ul li a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+nav ul li a:hover {
+  color: #ffd700;
+}
+
+/* 본문이 네비게이션 아래로 내려가도록 여백 */
+.main-container {
+  padding-top: 70px; /* nav 높이 + 여유 */
+}
+
+.imgNav {
+  width: 50px;
+  height: 50px;
+  object-fit: cover; /* 이미지 비율 유지하며 잘림 방지 */
+  vertical-align: middle; /* 텍스트와 수평 정렬 */
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.imgNav:hover {
+  opacity: 0.8;
+}

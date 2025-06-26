@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>틱택토 메인</title>
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body style="background-image: url('img/backgroundsky.png'); background-size: cover; background-position: center;">
+  
+ 
+
+  <nav>
+    <ul>
+      <li><a href="/main">홈</a></li>
+    </ul>
+    <ul class="nav-right">
+      <li><a href="/rules.html">규칙</a></li>
+      <li><a href="/rules">업적</a></li>
+      <li><a href="/ranking">랭킹</a></li>
+
+      <!-- 친구 이미지 -->
+      <li class="nav-icon">
+        <a href="/friends">
+          <img src="img/friend.png" alt="친구" class="imgNav"/>
+        </a>
+      </li>
+       <!-- 프로필 이미지 -->
+      <li class="nav-icon">
+        <a href="/profile">
+          <img src="img/profile.png" alt="프로필" class="imgNav" />
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <div id="overlay"></div>
+  <div class="overlay-box">
+    <div class="main-container">
+      <h1 class="main-title">[게임 시작하기]</h1>
+      <p class="main-description">어떤 게임을 플레이 하시겠어요?</p>
+
+      <div class="input-buttons-wrapper">
+        <!-- 친구 코드 입장 -->
+        <div class="code-entry">
+          <label for="room-code">친구와 함께하기</label>
+          <p class="code-text">코드 입력</p>
+          <div class="code-input-group">
+            <input type="text" id="room-code" placeholder="방 코드 입력" />
+            <button id="btn-join-room">입장</button>
+          </div>
+          </div>
+        <!-- 세로 버튼 -->
+        <div class="vertical-buttons">
+          <button id="btn-ai" class="main-btn">AI 대전</button>
+          <button id="btn-random" class="main-btn">랜덤 입장</button>
+          <button id="btn-create" class="main-btn">방 만들기</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ AI 대전 모달 -->
+  <div id="modal-ai" class="modal hidden">
+    <div class="modal-content">
+      <div class="title-box">
+        <h3>AI 대전 모드 및 난이도 선택</h3>
+      </div>
+      <div style="margin-top: 15px;">
+        <strong style="margin-left: 20px;">모드 선택</strong><br/>
+        <button id="btn-mode-select" class="select-btn" style="margin-left: 20px;">모드 선택 ▼</button>
+        <div id="mode-options" class="dropdown hidden">
+          <button class="mode-option" data-mode="ai-3x3">3×3 틱택토</button>
+          <button class="mode-option" data-mode="ai-5x5">5×5 틱택토</button>
+          <button class="mode-option" data-mode="ultimate-ai">궁극의 틱택토</button>
+        </div>
+      </div>
+      <div style="margin-top: 15px;">
+        <strong style="margin-left: 20px;">난이도 선택</strong><br/>
+        <button id="btn-difficulty-select" class="select-btn" style="margin-left: 20px;">난이도 선택 ▼</button>
+        <div id="difficulty-options" class="dropdown hidden">
+          <button class="difficulty-option" data-difficulty="easy">쉬움</button>
+          <button class="difficulty-option" data-difficulty="normal">보통</button>
+          <button class="difficulty-option" data-difficulty="hard">어려움</button>
+        </div>  
+      </div>
+      <div style="margin-top: 20px; text-align: right;" >
+        <button id="btn-start-ai" disabled style="margin-bottom:20px; margin-right:20px;">시작하기</button>
+        <button id="btn-cancel-ai" style="margin-bottom:20px; margin-right:20px;">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ 방 만들기 모달 -->
+  <div id="modal-create" class="modal">
+    <div class="modal-content">
+      <h3>방 만들기</h3>
+      <input type="text" id="room-key" placeholder="방 코드 입력" />
+      <label class="checkbox-label">
+        <input type="checkbox" id="allow-random" />
+        랜덤 입장 허용
+      </label>
+      <button id="btn-create-room">방 생성</button>
+      <button class="close-modal">닫기</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

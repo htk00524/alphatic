@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>틱택토 시작</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+</head>
+<body>
+  <div class="background-container login-bg">
+    <img src="img/alphatic_logo.png" alt="틱택토 로고" class="logo" /><br>
+    <p>WELCOME TO alphaTIC</p>
+    <p>웹에서 틱택토 게임을 즐겨보세요!</p>
+    <p class="line"></p>
+
+    <div class="login-buttons">
+      <button class="click-area guest" id="guestBtn">
+        <img src="img/guest.png" alt="Guest Logo" class="login-logo" />
+        <span class="btn-text">비회원으로 시작하기</span>
+      </button>
+      <p class="line"></p>
+      <button class="click-area google" id="googleBtn">
+        <img src="img/google.png" alt="Google Logo" class="login-logo" />
+        <span class="btn-text">구글 계정으로 로그인</span>
+      </button>
+      <button class="click-area kakao" id="kakaoBtn">
+        <img src="img/kakao.png" alt="Kakao Logo" class="login-logo" />
+        <span class="btn-text">카카오톡 계정으로 로그인</span>
+      </button>
+      <button class="click-area naver" id="naverBtn">
+        <img src="img/naver.png" alt="Naver Logo" class="login-logo" />
+        <span class="btn-text">네이버 계정으로 로그인</span>
+      </button>
+      <p class="line"></p>
+      <a id="clickRule"><span class="rules">틱택토 게임 룰 보러가기</span></a>
+    
+    </div>
+  </div>
+ 
+  <!-- 닉네임 입력 모달 -->
+  <div id="nicknameModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>닉네임 입력</h2>
+      <input type="text" id="nicknameInput" placeholder="닉네임 입력" />
+      <button id="confirmNicknameBtn" disabled>시작하기</button>
+    </div>
+  </div>
+ 
+  <script type="module">
+    import { saveGuestNickname, loginWithGoogle, loginWithKakao, loginWithNaver } from './js/auth.js';
+ 
+    document.addEventListener("DOMContentLoaded", () => {
+      const guestBtn = document.getElementById("guestBtn");
+      const googleBtn = document.getElementById("googleBtn");
+      const kakaoBtn = document.getElementById("kakaoBtn");
+      const naverBtn = document.getElementById("naverBtn");
+      const clickRule = document.getElementById("clickRule");
+      const modal = document.getElementById("nicknameModal");
+      const nicknameInput = document.getElementById("nicknameInput");
+      const confirmBtn = document.getElementById("confirmNicknameBtn");
+
+            // 게스트 버튼
+      if (guestBtn && modal) {
+        guestBtn.addEventListener("click", () => {
+          modal.classList.remove("hidden");
+        });
+      }
+
+      // 닉네임 입력 처리
+      if (nicknameInput && confirmBtn) {
+        nicknameInput.addEventListener("input", () => {
+          confirmBtn.disabled = nicknameInput.value.trim() === "";
+        });
+      }
+      // 시작하기 버튼 → main.html로 이동
+      if (confirmBtn) {
+        confirmBtn.addEventListener("click", () => {
+          const nickname = nicknameInput.value.trim();
+          if (nickname) {
+            saveGuestNickname(nickname);  // 닉네임 저장 함수 호출
+            window.location.href = "/main"; // Express에서 라우팅된 URL로 이동
+          }
+        });
+      }
+
+      // 소셜 로그인 버튼들
+      if (googleBtn) {
+        googleBtn.addEventListener("click", () => loginWithGoogle());
+      }
+      
+      if (kakaoBtn) {
+        kakaoBtn.addEventListener("click", () => loginWithKakao());
+      }
+      
+      if (naverBtn) {
+        naverBtn.addEventListener("click", () => loginWithNaver());
+      }
+
+      // 규칙 버튼
+      if (clickRule) {
+        clickRule.addEventListener("click", (e) => {
+          e.preventDefault();  // a태그 기본 동작 막기
+          window.location.href = "rules.html";
+        });
+      }
+    });
+  </script>
+</body>
+</html>

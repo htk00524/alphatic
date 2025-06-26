@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>틱택토 게임</title>
+  <link rel="stylesheet" href="/css/game.css" />
+</head>
+<body background="img/backgroundsky.png">
+  <nav>
+    <ul>
+      <li><a href="/main">방 나가기</a></li>
+    </ul>
+    <ul class="nav-right">
+      <li><a href="/rules.html">규칙</a></li>
+      <li><a href="/rules">업적</a></li>
+      <li><a href="/ranking">랭킹</a></li>
+
+      <!-- 친구 이미지 -->
+      <li class="nav-icon">
+        <a href="/friends">
+          <img src="img/friend.png" alt="친구" class="imgNav"/>
+        </a>
+      </li>
+       <!-- 프로필 이미지 -->
+      <li class="nav-icon">
+        <a href="/profile">
+          <img src="img/profile.png" alt="프로필" class="imgNav" />
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <h1>틱택토 게임</h1>
+  <div class="box1">
+    <img src="img/gameFrame.png" alt="프레임" class="frame" draggable="false"/>
+  </div> 
+  <div class="gaming">
+  <div id="status">대기 중...</div>
+
+  <div id="board"></div>
+
+  <div id="controls">
+    <select id="game-mode-select">
+      <option value="3x3" selected>3x3</option>
+      <option value="5x5">5x5</option>
+      <option value="ai-3x3">AI 3x3</option>
+      <option value="ai-5x5">AI 5x5</option>
+      <option value="ultimate">Ultimate</option>
+      <option value="ultimate-ai">Ultimate AI</option>
+    </select>
+
+    <button id="btn-random">랜덤 매칭</button>
+    <button id="btn-create-room">방 만들기</button>
+    <input id="input-room-code" placeholder="방 코드 입력" maxlength="5" style="text-transform: uppercase;"/>
+    <button id="btn-join-room">방 입장</button>
+
+    <div id="room-code-display"></div>
+
+    <button id="btn-rematch">재대결 요청</button>
+  </div>
+
+  <div id="chat-box"></div>
+
+  <form id="chat-form">
+    <input id="chat-input" autocomplete="off" placeholder="채팅 메시지 입력" />
+    <button type="submit">전송</button>
+  </form>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/game.js"></script>
+</body>
+</html>
